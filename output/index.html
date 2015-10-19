@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>Leaflet Heatmap Layer Plugin</title>
+    <style>
+        body, html { margin:0; padding:0; height:100%;}
+        body { font-family:sans-serif; }
+        body * { font-weight:200;}
+        h1 { position:absolute; background:white; padding:10px;}
+        #map { height:100%; }
+        h1 { position:absolute; background:black; color:white; padding:10px; font-weight:200; z-index:10000;}
+        #btn { position:absolute; background:black; color:white; padding:10px; font-weight:200; z-index:10000;left:100%;width:300px;margin-left:-300px;}
+    </style>
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+    <script src="//cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+    <script src="lib/heatmap.js"></script>
+    <script src="lib/leaflet-heatmap.js"></script>
+</head>
+<body>
+<!--
+<h1>Leaflet Heatmap Layer Example</h1>
+-->
+<div id="btn"><input type="file" id="files" name="files"/></div>
+<div id="map"></div>
+
+<!--
+<div id="all-examples-info">
+    <strong style="font-weight:bold;line-height:200%;font-size:18px;">Looking for more examples?</strong> <br />Check out the full <a href="http://www.patrick-wied.at/static/heatmapjs/examples.html?utm_source=gh_local" target="_blank">list of all heatmap.js examples</a> with more pointers &amp; inline documentation.
+</div>
+-->
+<script>
+    var map,layer;
+    window.onload = function() {
+        var baseLayer = L.tileLayer(
+                'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+                    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
+                    maxZoom: 18
+                }
+        );
+        var cfg = {
+            // radius should be small ONLY if scaleRadius is true (or small radius is intended)
+            "radius": 0.00025,
+            "maxOpacity": .8,
+            // scales the radius based on map zoom
+            "scaleRadius": true,
+            // if set to false the heatmap uses the global maximum for colorization
+            // if activated: uses the data maximum within the current map boundaries
+            //   (there will always be a red spot with useLocalExtremas true)
+            "useLocalExtrema": false,
+            // which field name in your data represents the latitude - default "lat"
+            latField: 'lat',
+            // which field name in your data represents the longitude - default "lng"
+            lngField: 'lng',
+            // which field name in your data represents the data value - default "value"
+            valueField: 'count'
+        };
+        var heatmapLayer = new HeatmapOverlay(cfg);
+        map = new L.Map('map', {
+            center: new L.LatLng(35.4433, 139.64),
+            zoom: 4,
+            layers: [baseLayer, heatmapLayer]
+        });
+        heatmapLayer.setData({
+            max:10,
+            data:[]
+        });
+        // make accessible for debugging
+        layer = heatmapLayer;
+    };
+    document.getElementById('files').addEventListener('change', function (evt) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var src = {
+                max:45,
+                data:[]
+            };
+            var dataset = JSON.parse(e.target.result);
+            var east = Math.max(dataset.bbox[0],dataset.bbox[2]);
+            var west = Math.min(dataset.bbox[0],dataset.bbox[2]);
+            var north  = Math.max(dataset.bbox[1],dataset.bbox[3]);
+            var south  = Math.min(dataset.bbox[1],dataset.bbox[3]);
+            var cells = 40;
+            var grid = {};
+            var range = Math.max(north - south,east - west) / cells;
+            dataset.data.forEach(function(item){
+                if(item.latitude && item.longitude) {
+                    var lat =  parseFloat(item.latitude);
+                    var lng =  parseFloat(item.longitude);
+                    var sn = Math.floor((lat - south) / range);
+                    var we = Math.floor((lng - west) / range);
+                    if(grid[sn+"."+we]){
+                        grid[sn+"."+we]++;
+                    }else{
+                        grid[sn+"."+we]=1;
+                    }
+                    var d = {
+                        lat:lat,
+                        lng:lng,
+                        count: 1
+                    };
+                    src.data.push(d);
+                }
+            });
+            var n = [];
+            for(var idx in grid){
+                n.push(grid[idx]);
+            }
+            n = n.sort(function cp(val1, val2){
+                return val2 - val1;
+            });
+            src.max = Math.round(n[Math.round(n.length/10)]);
+            layer.setData(src);
+            map.fitBounds([
+                [dataset.bbox[1],dataset.bbox[0]],
+                [dataset.bbox[3], dataset.bbox[2]]
+            ]);
+        };
+        reader.readAsText(evt.target.files[0]);
+
+    });
+</script>
+</body>
+</html>

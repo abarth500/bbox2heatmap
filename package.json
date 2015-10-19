@@ -1,0 +1,22 @@
+{
+  "name": "bbox2heatmap",
+  "version": "0.0.1",
+  "description": "Set bbox, get heatmap of Flickr geotagged photographs.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abarth500/bbox2heatmap.git"
+  },
+  "keywords": [
+    "Flickr"
+  ],
+  "author": "Shohei Yokoyama",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/abarth500/bbox2heatmap/issues"
+  },
+  "homepage": "https://github.com/abarth500/bbox2heatmap#readme"
+}

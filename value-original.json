@@ -1,0 +1,6 @@
+{
+  "flickr_options": {
+    "api_key": "your api key of Flickr",
+    "secret": "your secret of Flickr"
+  }
+}

@@ -4,8 +4,8 @@
 
 var BBOX2Heatmap = require(__dirname + "/index.js");
 var argv = require('yargs')
-    .usage('Usage: node $0 [options]')
-    .example('$0 --bbox=-81.603699,28.345482,-81.505508,28.426581 --search=mickey', 'Draw heatmap of photographs of Mickey in Disney World')
+    .usage('Usage: node $0 <output-file-name> [options]')
+    .example('$0 mickey-in-disney-world --bbox=-81.603699,28.345482,-81.505508,28.426581 --search=mickey', 'Draw heatmap of photographs of Mickey in Disney World')
     .demand(['B'])
     .alias('B', 'bbox')
     .describe('B', 'comma-separated bbox')
@@ -24,7 +24,6 @@ if (!argv.bbox) {
     console.error("Set BBOX. (see --help)");
     process.exit();
 } else {
-    console.log(argv);
     var bbox =argv.bbox.split(',');
     if (bbox.length == 4
         && !isNaN(bbox[0])
@@ -32,6 +31,9 @@ if (!argv.bbox) {
         && !isNaN(bbox[2])
         && !isNaN(bbox[3])) {
         var option = {};
+        if(argv._.length>0) {
+            option.output = argv._[0];
+        }
         if(argv.search) {
             option.search = argv.search;
         }

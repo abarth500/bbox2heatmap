@@ -11,12 +11,19 @@ function BBOX2Heatmap(bbox,option){
     var west  = Math.min(bbox[1],bbox[3]);
     */
     var search = false;
-    if(option.search){
-        search = option.search;
-    }
     var max = 1000000;
-    if(option.max){
-        max = option.max;
+    var shortid = require('shortid');
+    var output = __dirname + "/output/" + shortid.generate() + ".json";
+    if(option) {
+        if (option.hasOwnProperty("search")) {
+            search = option.search;
+        }
+        if (option.hasOwnProperty("max")) {
+            max = option.max;
+        }
+        if (option.hasOwnProperty("output")){
+            output = __dirname + "/output/" + option.output + ".json";
+        }
     }
     try{
         var opt = require(__dirname + "/value.json");
@@ -28,9 +35,6 @@ function BBOX2Heatmap(bbox,option){
     }
     var flickr_options  = opt['flickr_options'];
     var async = require('async');
-    var shortid = require('shortid');
-    var output = __dirname + "/output/" + shortid.generate() + ".json";
-
     async.waterfall([
         openOutputFile,
         openFlickrConnection,

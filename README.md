@@ -42,11 +42,12 @@ node bbox2heatmap/execute.js --bbox=-19.69,36.03,26.37,59.18 --serch=wine --max=
 2. Open result JSON file.
 
 ### Heatmap of Wine in Europe
-![Wine heatmap](https://c1.staticflickr.com/1/723/22110621818_23ba4eef64_z.jpg "Wine in Europe")
+![Wine heatmap](https://c1.staticflickr.com/1/630/21677292443_ef99646bf3_z.jpg "Wine in Europe")
 
 ### Heatmap of Beer in Europe
 ![Beer heatmap](https://c2.staticflickr.com/6/5830/21675589384_56fa290cb6_z.jpg "Beer in Europe")
 
 ### Heatmap of Whisky in Europe
 ![Whisky heatmap](https://c1.staticflickr.com/1/723/22110621818_23ba4eef64_z.jpg "Whisky in Europe")
+
 Scotland!

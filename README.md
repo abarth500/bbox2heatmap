@@ -16,7 +16,7 @@ BBOX2Heatmap([west,south,east,north],{search:"keyword",max:maximum-number-of-pho
 npm install bbox2heatmap
 ```
 
-Set your Flickr API key and secret into value.js (See also the themplate, value-original.js)
+Set your Flickr API key and secret into value.js (See also the template, value-original.js)
 
 ```(JavaScript)
 {

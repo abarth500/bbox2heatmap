@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="utf-8">
-    <title>Leaflet Heatmap Layer Plugin</title>
+    <title>Heatmap Viewer for Flickr Geotagged Photographs</title>
     <style>
         body, html { margin:0; padding:0; height:100%;}
         body { font-family:sans-serif; }
@@ -13,7 +13,7 @@
         #btn { position:absolute; background:black; color:white; padding:10px; font-weight:200; z-index:10000;left:100%;width:300px;margin-left:-300px;}
     </style>
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
-    <script src="//cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
     <script src="lib/heatmap.js"></script>
     <script src="lib/leaflet-heatmap.js"></script>
 </head>
@@ -21,7 +21,7 @@
 <!--
 <h1>Leaflet Heatmap Layer Example</h1>
 -->
-<div id="btn"><input type="file" id="files" name="files"/></div>
+<div id="btn"><input type="file" id="files" name="files"/><div id="tag"></div></div>
 <div id="map"></div>
 
 <!--
@@ -83,8 +83,9 @@
             var west = Math.min(dataset.bbox[0],dataset.bbox[2]);
             var north  = Math.max(dataset.bbox[1],dataset.bbox[3]);
             var south  = Math.min(dataset.bbox[1],dataset.bbox[3]);
-            var cells = 40;
+            var cells = 50;
             var grid = {};
+            document.getElementById("tag").innerHTML = "Search: "+dataset.search;
             var range = Math.min(north - south,east - west) / cells;
             dataset.data.forEach(function(item){
                 if(item.latitude && item.longitude) {

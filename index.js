@@ -2,7 +2,7 @@
  * Created by Shohei Yokoyama on 2015/10/15.
  */
 
-function BBOX2Heatmap(bbox){
+function BBOX2Heatmap(bbox,option){
     var maxUploadDate = Math.floor(Date.now() / 1000);
     /*
     var north = Math.max(bbox[0],bbox[2]);
@@ -10,6 +10,14 @@ function BBOX2Heatmap(bbox){
     var east  = Math.max(bbox[1],bbox[3]);
     var west  = Math.min(bbox[1],bbox[3]);
     */
+    var search = false;
+    if(option.search){
+        search = option.search;
+    }
+    var max = 1000000;
+    if(option.max){
+        max = option.max;
+    }
     try{
         var opt = require(__dirname + "/value.json");
     } catch(err){
@@ -31,8 +39,12 @@ function BBOX2Heatmap(bbox){
 
     function openOutputFile(next){
         var fs = require('fs');
+        var line = '{"bbox":['+bbox.join(',')+'],';
         fs.open(output, "w",'0666',function(err,fd){
-            fs.writeSync(fd,'{"bbox":['+bbox.join(',')+'],"data":['+"\n");
+            if(search){
+                line+= '"search":"'+search+'",';
+            }
+            fs.writeSync(fd,line+'"data":['+"\n");
             next(err,fd);
         });
     }
@@ -55,14 +67,17 @@ function BBOX2Heatmap(bbox){
             next(new Error('SIGINT'),fd,flickr);
         });
         async.forever(function(next){
-            console.log("["+maxUploadDate+"] "+ nop +" photographs");
+            var opt = {
+                bbox:bbox.join(","),
+                sort:"date-posted-desc",
+                max_upload_date :maxUploadDate,
+                extras:"date_upload,date_taken,url_sq,url_z,geo"
+            };
+            if(search){
+                opt.text = search;
+            }
             flickr.photos.search(
-                {
-                    bbox:bbox.join(","),
-                    sort:"date-posted-desc",
-                    max_upload_date :maxUploadDate,
-                    extras:"date_upload,date_taken,url_sq,url_z,geo"
-                },
+                opt,
                 function (err, result) {
                     result.photos.photo.forEach(function(photo) {
                         if(typeof ids[photo.id] != "undefined"){
@@ -83,9 +98,19 @@ function BBOX2Heatmap(bbox){
                             "url_z":photo.url_z
                         };
                         require('fs').write(fd,JSON.stringify(line)+",\n");
-                        maxUploadDate = 0 + photo.dateupload;
+                        maxUploadDate = 1 * photo.dateupload;
+                        if(nop >= max){
+                            console.log("["+maxUploadDate+"] "+ nop +" photographs");
+                            errorHandler(null,fd);
+                            process.exit(0);
+                        }
                     });
                     //maxUploadDate--;
+                    if(result.photos.pages == 1){
+                        errorHandler(null,fd);
+                        process.exit(0);
+                    }
+                    console.log("["+maxUploadDate+"] "+ nop +" photographs");
                     next(null,fd,flickr);
                 }
             );

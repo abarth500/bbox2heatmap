@@ -1,6 +1,6 @@
 {
   "name": "bbox2heatmap",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Set bbox, get heatmap of Flickr geotagged photographs.",
   "main": "index.js",
   "scripts": {
@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/abarth500/bbox2heatmap/issues"
   },
-  "homepage": "https://github.com/abarth500/bbox2heatmap#readme"
+  "homepage": "https://github.com/abarth500/bbox2heatmap#readme",
+  "dependencies": {
+    "yargs": "^3.27.0"
+  }
 }

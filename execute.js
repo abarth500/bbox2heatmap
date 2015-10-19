@@ -1,28 +1,49 @@
 /**
  * Created by Shohei Yokoyama on 2015/10/15.
  */
-var argv = require('argv');
+
 var BBOX2Heatmap = require(__dirname + "/index.js");
-argv.option([
-    {
-        name: 'bbox',
-        short: 'B',
-        type: 'csv,float',
-        description: 'set Bounding BOX e.g.',
-        example: "'node bbox2heatmap/execute.js -B 11.543283,48.12657,11.554785,48.137053'"
-    }
-]);
-var args = argv.run();
-if (!args.options.bbox) {
+var argv = require('yargs')
+    .usage('Usage: node $0 [options]')
+    .example('$0 --bbox=-81.603699,28.345482,-81.505508,28.426581 --search=mickey', 'Draw heatmap of photographs of Mickey in Disney World')
+    .demand(['B'])
+    .alias('B', 'bbox')
+    .describe('B', 'comma-separated bbox')
+    .string('B')
+    .alias('S', 'search')
+    .describe('S', 'search keyword e.g. dog')
+    .string('S')
+    .alias('M', 'max')
+    .describe('M', 'maximum number of photographs e.g. 10000')
+    .string('M')
+    .help('h')
+    .alias('h', 'help')
+    .epilog('copyright 2015')
+    .argv;
+if (!argv.bbox) {
     console.error("Set BBOX. (see --help)");
     process.exit();
 } else {
-    if (args.options.bbox.length == 4
-        && !isNaN(args.options.bbox[0])
-        && !isNaN(args.options.bbox[1])
-        && !isNaN(args.options.bbox[2])
-        && !isNaN(args.options.bbox[3])) {
-        BBOX2Heatmap(args.options.bbox.slice(0, 4));
+    console.log(argv);
+    var bbox =argv.bbox.split(',');
+    if (bbox.length == 4
+        && !isNaN(bbox[0])
+        && !isNaN(bbox[1])
+        && !isNaN(bbox[2])
+        && !isNaN(bbox[3])) {
+        var option = {};
+        if(argv.search) {
+            option.search = argv.search;
+        }
+        if(argv.max){
+            option.max = argv.max;
+        }
+        if(Object.keys(option).length > 0){
+            console.log("[Start] bbox:"+bbox.slice(0, 4).join(",") + " option="+JSON.stringify(option));
+            BBOX2Heatmap(bbox.slice(0, 4),option);
+        }else {
+            BBOX2Heatmap(bbox.slice(0, 4));
+        }
     } else {
         console.error("Invalid BBOX. (see --help)");
         process.exit();

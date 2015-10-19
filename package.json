@@ -1,6 +1,6 @@
 {
   "name": "bbox2heatmap",
-  "version": "0.0.4",
+  "version": "0.0.7",
   "description": "Set bbox, get heatmap of Flickr geotagged photographs.",
   "main": "index.js",
   "scripts": {

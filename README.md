@@ -1,12 +1,22 @@
 # bbox2heatmap
 
+## Usage
+
+```(sh)
+node execute.js -bbox=[west,south,east,north] -search=[search keyword] --max=[maximum number of photographs]
+```
+OR
+```(JavaScript)
+BBOX2Heatmap([west,south,east,north],{search:"keyword",max:maximum-number-of-photographs});
+```
+
 ## Install
 
 ```(sh)
 npm install bbox2heatmap
 ```
 
-Set your Flickr API key and secret into value.js (The themplate is value-original.js)
+Set your Flickr API key and secret into value.js (See also the themplate, value-original.js)
 
 ```(JavaScript)
 {

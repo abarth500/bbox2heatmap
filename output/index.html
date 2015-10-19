@@ -61,16 +61,19 @@
             zoom: 4,
             layers: [baseLayer, heatmapLayer]
         });
+        /*
         heatmapLayer.setData({
             max:10,
             data:[]
         });
+        */
         // make accessible for debugging
         layer = heatmapLayer;
     };
     document.getElementById('files').addEventListener('change', function (evt) {
         var reader = new FileReader();
         reader.onload = function (e) {
+            map.removeLayer(layer);
             var src = {
                 max:45,
                 data:[]
@@ -82,7 +85,7 @@
             var south  = Math.min(dataset.bbox[1],dataset.bbox[3]);
             var cells = 40;
             var grid = {};
-            var range = Math.max(north - south,east - west) / cells;
+            var range = Math.min(north - south,east - west) / cells;
             dataset.data.forEach(function(item){
                 if(item.latitude && item.longitude) {
                     var lat =  parseFloat(item.latitude);
@@ -110,6 +113,18 @@
                 return val2 - val1;
             });
             src.max = Math.round(n[Math.round(n.length/10)]);
+            var cfg = {
+                "radius": range,
+                "maxOpacity": .8,
+                "scaleRadius": true,
+                "useLocalExtrema": false,
+                latField: 'lat',
+                lngField: 'lng',
+                valueField: 'count'
+            };
+            console.log("[Draw heatmap] max="+src.max+" ,range="+range);
+            layer = new HeatmapOverlay(cfg);
+            map.addLayer(layer);
             layer.setData(src);
             map.fitBounds([
                 [dataset.bbox[1],dataset.bbox[0]],

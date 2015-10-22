@@ -34,17 +34,17 @@ Who drinks the most beer, wine, and whisky in Europe?
 
 ### Crawling Flickr Whisky Photographs
 ```(sh)
-node execute.js whisky-in-europe.example --bbox=-19.69,36.03,26.37,59.18 --serch=whisky --max=10000
+node execute.js whisky-in-europe.example --bbox=-19.69,36.03,26.37,59.18 --search=whisky --max=10000
 ```
 
 ### Crawling Flickr Wine Photographs
 ```(sh)
-node execute.js wine-in-europe.example --bbox=-19.69,36.03,26.37,59.18 --serch=wine --max=10000
+node execute.js wine-in-europe.example --bbox=-19.69,36.03,26.37,59.18 --search=wine --max=10000
 ```
 
 ### Crawling Flickr Beer Photographs
 ```(sh)
-node  execute.js beer-in-europe.example --bbox=-19.69,36.03,26.37,59.18 --serch=beer --max=10000
+node  execute.js beer-in-europe.example --bbox=-19.69,36.03,26.37,59.18 --search=beer --max=10000
 ```
 
 ## Visualize

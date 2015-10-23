@@ -11,10 +11,14 @@ function BBOX2Heatmap(bbox,option){
     var west  = Math.min(bbox[1],bbox[3]);
     */
     var search = false;
+    var track = false;
     var max = 1000000;
     var shortid = require('shortid');
     var output = __dirname + "/output/" + shortid.generate() + ".json";
     if(option) {
+        if (option.hasOwnProperty("track")) {
+            track = option.track.split(",");
+        }
         if (option.hasOwnProperty("search")) {
             search = option.search;
         }
@@ -48,6 +52,9 @@ function BBOX2Heatmap(bbox,option){
             if(search){
                 line+= '"search":"'+search+'",';
             }
+            if(track){
+                line+= '"track":["'+track.join('","')+'"],';
+            }
             fs.writeSync(fd,line+'"data":['+"\n");
             next(err,fd);
         });
@@ -67,11 +74,15 @@ function BBOX2Heatmap(bbox,option){
         console.log("Ready!");
         var ids = {};
         var nop = 0;
+        var page = 1;
         process.on('SIGINT', function() {
             next(new Error('SIGINT'),fd,flickr);
         });
         async.forever(function(next){
+            var maxUploadDate_start = maxUploadDate;
             var opt = {
+                page:page,
+                per_page:250,
                 bbox:bbox.join(","),
                 sort:"date-posted-desc",
                 max_upload_date :maxUploadDate,
@@ -90,31 +101,38 @@ function BBOX2Heatmap(bbox,option){
                         ids[photo.id] = true;
                         nop++;
                         //console.log(photo);
-
+                        var t = photo.datetaken.split(/[- :]/);
+                        var datetaken = new Date(t[0], t[1]-1, t[2], t[3], t[4], t[5]);
                         var line = {
                             "id":photo.id,
                             "owner":photo.owner,
-                            "dateupload":0 + photo.dateupload,
-                            "datetaken":photo.datetaken,
-                            "latitude":photo.latitude,
-                            "longitude":photo.longitude,
+                            "dateupload":+photo.dateupload,
+                            "datetaken":Math.floor(datetaken.getTime() / 1000),
+                            "latitude":+photo.latitude,
+                            "longitude":+photo.longitude,
                             "url_sq":photo.url_sq,
                             "url_z":photo.url_z
                         };
                         require('fs').write(fd,JSON.stringify(line)+",\n");
                         maxUploadDate = 1 * photo.dateupload;
                         if(nop >= max){
-                            console.log("["+maxUploadDate+"] "+ nop +" photographs");
+                            console.log("["+maxUploadDate+" ("+page+")] "+ nop +" photographs");
                             errorHandler(null,fd);
                             process.exit(0);
                         }
                     });
                     //maxUploadDate--;
+                    console.log(result.photos.total);
                     if(result.photos.pages == 1){
                         errorHandler(null,fd);
                         process.exit(0);
                     }
-                    console.log("["+maxUploadDate+"] "+ nop +" photographs");
+                    if(maxUploadDate_start == maxUploadDate){
+                        page++;
+                    }else{
+                        page = 1;
+                    }
+                    console.log("["+maxUploadDate+" ("+page+")] "+ nop +" photographs");
                     next(null,fd,flickr);
                 }
             );

@@ -11,10 +11,12 @@ var argv = require('yargs')
     .describe('B', 'comma-separated bbox')
     .string('B')
     .alias('S', 'search')
-    .describe('S', 'search keyword e.g. dog')
+    .describe('S', 'search keyword (e.g. dog)')
+    .alias('T', 'track')
+    .describe('T', 'draw markers of Flickr users (Comma separated user IDs, e.g. 40287908@N02')
     .string('S')
     .alias('M', 'max')
-    .describe('M', 'maximum number of photographs e.g. 10000')
+    .describe('M', 'maximum number of photographs (e.g. 10000)')
     .string('M')
     .help('h')
     .alias('h', 'help')
@@ -39,6 +41,9 @@ if (!argv.bbox) {
         }
         if(argv.max){
             option.max = argv.max;
+        }
+        if(argv.track){
+            option.track = argv.track;
         }
         if(Object.keys(option).length > 0){
             console.log("[Start] bbox:"+bbox.slice(0, 4).join(",") + " option="+JSON.stringify(option));

@@ -1,6 +1,6 @@
 {
   "name": "bbox2heatmap",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Crawling Flickr's geotagged photographs and drawing a heatmap",
   "main": "index.js",
   "scripts": {
@@ -21,6 +21,7 @@
   "homepage": "https://github.com/abarth500/bbox2heatmap#readme",
   "dependencies": {
     "async": "^1.4.2",
+    "flickrapi": "^0.3.36",
     "shortid": "^2.2.4",
     "yargs": "^3.27.0"
   }

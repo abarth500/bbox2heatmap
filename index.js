@@ -33,8 +33,14 @@ function BBOX2Heatmap(bbox,option){
         var opt = require(__dirname + "/value.json");
     } catch(err){
         if(err.code === 'MODULE_NOT_FOUND'){
-            console.log("Set your Flickr API key to ./values.json (See also value-original.json)");
-            process.exit();
+            try {
+                opt = require(__dirname + "../../value.json");
+            }catch(err2) {
+                if(err2.code === 'MODULE_NOT_FOUND') {
+                    console.log("Set your Flickr API key to ./values.json (See also value-original.json)");
+                    process.exit();
+                }
+            }
         }
     }
     var flickr_options  = opt['flickr_options'];

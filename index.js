@@ -34,7 +34,7 @@ function BBOX2Heatmap(bbox,option){
     } catch(err){
         if(err.code === 'MODULE_NOT_FOUND'){
             try {
-                opt = require(__dirname + "../../value.json");
+                opt = require(__dirname + "/../../value.json");
             }catch(err2) {
                 if(err2.code === 'MODULE_NOT_FOUND') {
                     console.log("Set your Flickr API key to ./values.json (See also value-original.json)");
@@ -128,7 +128,6 @@ function BBOX2Heatmap(bbox,option){
                         }
                     });
                     //maxUploadDate--;
-                    console.log(result.photos.total);
                     if(result.photos.pages == 1){
                         errorHandler(null,fd);
                         process.exit(0);

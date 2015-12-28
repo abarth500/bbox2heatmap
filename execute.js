@@ -49,6 +49,7 @@ if (!argv.bbox) {
             console.log("[Start] bbox:"+bbox.slice(0, 4).join(",") + " option="+JSON.stringify(option));
             BBOX2Heatmap(bbox.slice(0, 4),option);
         }else {
+            console.log("[Start] bbox:"+bbox.slice(0, 4).join(","));
             BBOX2Heatmap(bbox.slice(0, 4));
         }
     } else {

@@ -1,28 +1,35 @@
 {
-  "name": "bbox2heatmap",
-  "version": "0.2.3",
-  "description": "Crawling Flickr's geotagged photographs and drawing a heatmap",
-  "main": "index.js",
-  "scripts": {
-    "test": "node test/test.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/abarth500/bbox2heatmap.git"
-  },
-  "keywords": [
-    "Flickr"
-  ],
-  "author": "Shohei Yokoyama",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/abarth500/bbox2heatmap/issues"
-  },
-  "homepage": "https://github.com/abarth500/bbox2heatmap#readme",
-  "dependencies": {
-    "async": "^1.4.2",
-    "flickrapi": "^0.3.36",
-    "shortid": "^2.2.4",
-    "yargs": "^3.27.0"
-  }
+    "name": "bbox2heatmap",
+    "version": "1.0.4",
+    "description": "Crawling Flickr's geotagged photographs and drawing a heatmap",
+    "main": "index.js",
+    "scripts": {
+        "test": "node test/test.js"
+    },
+    "bin": {
+        "run": "./execute.js",
+        "usage": "./execute.js --help",
+        "password": "./newpassword.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/abarth500/bbox2heatmap.git"
+    },
+    "keywords": [
+        "Flickr"
+    ],
+    "author": "Shohei Yokoyama",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/abarth500/bbox2heatmap/issues"
+    },
+    "homepage": "https://github.com/abarth500/bbox2heatmap#readme",
+    "dependencies": {
+        "async": ">=3.2.3",
+        "flickr-sdk": ">=6.0.0",
+        "opener": ">=1.5.2",
+        "prompts": ">=2.4.2",
+        "shortid": ">=2.2.16",
+        "yargs": ">=17.4.1"
+    }
 }

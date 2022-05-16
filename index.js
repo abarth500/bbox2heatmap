@@ -110,55 +110,61 @@ function BBOX2Heatmap(apikey, bbox, option) {
                             let result = JSON.parse(response.text);
                             if (doneCrawl) {
                             } else {
-                                result.photos.photo.forEach(function (photo) {
-                                    if (typeof ids[photo.id] != 'undefined') {
-                                        return true;
-                                    }
-                                    ids[photo.id] = true;
-                                    nop++;
-                                    //console.log(photo);
-                                    var t = photo.datetaken.split(/[- :]/);
-                                    var datetaken = new Date(t[0], t[1] - 1, t[2], t[3], t[4], t[5]);
-                                    var line = {
-                                        id: photo.id,
-                                        owner: photo.owner,
-                                        dateupload: +photo.dateupload,
-                                        datetaken: Math.floor(datetaken.getTime() / 1000),
-                                        latitude: +photo.latitude,
-                                        longitude: +photo.longitude,
-                                        url_sq: photo.url_sq,
-                                        url_z: photo.url_z,
-                                    };
-                                    if (!doneCrawl) {
-                                        require('fs').writeSync(fd, JSON.stringify(line) + ',\n', '');
-                                    }
-                                    maxUploadDate = 1 * photo.dateupload;
-                                    if (nop >= max) {
-                                        console.log('[' + maxUploadDate + ' (' + page + ')] ' + nop + ' photographs');
-                                        //errorHandler(null, fd);
+                                try {
+                                    result.photos.photo.forEach(function (photo) {
+                                        if (typeof ids[photo.id] != 'undefined') {
+                                            return true;
+                                        }
+                                        ids[photo.id] = true;
+                                        nop++;
+                                        //console.log(photo);
+                                        var t = photo.datetaken.split(/[- :]/);
+                                        var datetaken = new Date(t[0], t[1] - 1, t[2], t[3], t[4], t[5]);
+                                        var line = {
+                                            id: photo.id,
+                                            owner: photo.owner,
+                                            dateupload: +photo.dateupload,
+                                            datetaken: Math.floor(datetaken.getTime() / 1000),
+                                            latitude: +photo.latitude,
+                                            longitude: +photo.longitude,
+                                            url_sq: photo.url_sq,
+                                            url_z: photo.url_z,
+                                        };
+                                        if (!doneCrawl) {
+                                            require('fs').writeSync(fd, JSON.stringify(line) + ',\n', '');
+                                        }
+                                        maxUploadDate = 1 * photo.dateupload;
+                                        if (nop >= max) {
+                                            console.log('[' + maxUploadDate + ' (' + page + '/' + result.photos.pages + ')] ' + nop + ' photographs');
+                                            //errorHandler(null, fd);
+                                            doneCrawl = true;
+                                            throw new Error("Done");
+                                            //nextF('Collect ' + max + ' photos', fd, flickr);
+                                            //return 'Collect ' + max + ' photos';
+                                            //process.exit(0);
+                                        }
+                                    });
+                                    //maxUploadDate--;
+                                    if (result.photos.pages == 1) {
                                         doneCrawl = true;
-                                        //nextF('Collect ' + max + ' photos', fd, flickr);
-                                        //return 'Collect ' + max + ' photos';
+                                        throw new Error("Done");
+                                        //nextF('Collect all photos', fd, flickr);
+                                        //return 'collect all photos';
                                         //process.exit(0);
                                     }
-                                });
-                                //maxUploadDate--;
-                                if (result.photos.pages == 1) {
-                                    doneCrawl = true;
-                                    //nextF('Collect all photos', fd, flickr);
-                                    //return 'collect all photos';
-                                    //process.exit(0);
-                                }
-                                if (doneCrawl) {
-                                    nextF('Done', fd, flickr);
-                                } else {
-                                    if (maxUploadDate_start == maxUploadDate) {
-                                        page++;
+                                    if (doneCrawl) {
+                                        throw new Error("Done");
                                     } else {
-                                        page = 1;
+                                        if (maxUploadDate_start == maxUploadDate) {
+                                            page++;
+                                        } else {
+                                            page = 1;
+                                        }
+                                        console.log('[' + maxUploadDate + ' (' + page + ')] ' + nop + ' photographs');
+                                        nextF(null, fd, flickr);
                                     }
-                                    console.log('[' + maxUploadDate + ' (' + page + ')] ' + nop + ' photographs');
-                                    nextF(null, fd, flickr);
+                                } catch (e) {
+                                    nextF('Done', fd, flickr);
                                 }
                             }
                         },
@@ -172,7 +178,7 @@ function BBOX2Heatmap(apikey, bbox, option) {
                     });
             },
             (err) => {
-                console.log('test');
+                console.log(err);
                 next('Done', fd, flickr);
             }
         );
@@ -206,9 +212,9 @@ function BBOX2Heatmap(apikey, bbox, option) {
             opener('http://localhost:' + port + '/?bbox=' + bbox[0] + ',' + bbox[1] + ',' + bbox[2] + ',' + bbox[3] + '&search=' + option.search);
             console.log('\tServer running at http://localhost:' + port + '/');
             //console.log('プログラムを停止するには[Ctrl+C]をおしてください。');
-            setTimeout(()=>{
+            setTimeout(() => {
                 process.exit(0);
-            },2000);
+            }, 5000);
         });
     }
 }

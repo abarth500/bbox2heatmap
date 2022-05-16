@@ -26,6 +26,17 @@
             #map {
                 height: 100%;
             }
+            #thumb {
+                border: 3px solid black;
+                z-index: 10000;
+                width: 81px;
+                height: 81px;
+                background-color: beige;
+                position: absolute;
+                top: 100%;
+                left: 0px;
+                margin-top: -81px;
+            }
             h1 {
                 position: absolute;
                 background: black;
@@ -94,21 +105,28 @@
         <script src="https://cdn.jsdelivr.net/npm/leaflet-heatmap@1.0.0/leaflet-heatmap.min.js"></script>
     </head>
     <body>
-        <!--
-<h1>Leaflet Heatmap Layer Example</h1>
--->
         <div id="btn">
             <div id="tag"></div>
         </div>
+        <div id="thumb"><img /></div>
         <div id="map"></div>
-
-        <!--
-<div id="all-examples-info">
-    <strong style="font-weight:bold;line-height:200%;font-size:18px;">Looking for more examples?</strong> <br />Check out the full <a href="http://www.patrick-wied.at/static/heatmapjs/examples.html?utm_source=gh_local" target="_blank">list of all heatmap.js examples</a> with more pointers &amp; inline documentation.
-</div>
--->
         <script>
             // Thanks https://gist.github.com/comp615/2288108
+            let photos = [];
+            let photoIdx = 0;
+            let photoMarker = null;
+            let map;
+            function changePhoto() {
+                if (photos.length >= photoIdx) {
+                    photoIdx = 0;
+                }
+                if (photoMarker != null) {
+                    map.removeLayer(photoMarker);
+                }
+                $('#thumb>img').attr('src', photos[photoIdx++].url);
+                photoMarker = L.marker([photos[photoIdx++].lat, photos[photoIdx++].lng]).addTo(map);
+                setTimeout(changePhoto, 1000);
+            }
             L.NumberedDivIcon = L.Icon.extend({
                 options: {
                     // EDIT THIS TO POINT TO THE FILE AT http://www.charliecroom.com/marker_hole.png (or your own marker)
@@ -118,10 +136,6 @@
                     iconSize: new L.Point(25, 41),
                     iconAnchor: new L.Point(13, 41),
                     popupAnchor: new L.Point(0, -33),
-                    /*
-             iconAnchor: (Point)
-             popupAnchor: (Point)
-             */
                     className: 'leaflet-div-icon',
                 },
 
@@ -143,13 +157,12 @@
                 },
             });
 
-            var map, layer;
+            var layer;
+            var cells = 50;
             window.onload = function () {
                 fetch('/json')
                     .then((response) => response.json())
                     .then((dataset) => {
-                        console.log(dataset);
-
                         const params = new URLSearchParams(location.search);
                         const search = params.get('search');
                         const bboxraw = params.get('bbox').split(',');
@@ -168,6 +181,140 @@
                             data: [],
                         };
                         //var dataset = JSON.parse(e.target.result);
+                        var east = Math.max(dataset.bbox[0], dataset.bbox[2]);
+                        var west = Math.min(dataset.bbox[0], dataset.bbox[2]);
+                        var north = Math.max(dataset.bbox[1], dataset.bbox[3]);
+                        var south = Math.min(dataset.bbox[1], dataset.bbox[3]);
+                        var center = { lat: west + (east - west) / 2, lng: south + (north - south) / 2 };
+                        var grid = {};
+                        var track = {};
+                        if (dataset.track) {
+                            dataset.track.every(function (item) {
+                                track[item] = [];
+                                return true;
+                            });
+                        }
+                        document.getElementById('tag').innerHTML = 'Search: ' + dataset.search;
+                        var range = Math.min(north - south, east - west) / cells;
+                        dataset.data.forEach(function (item) {
+                            console.log(item);
+                            photos.push({
+                                url: item.url_sq,
+                                lat: item.latitude,
+                                lng: item.longitude,
+                            });
+                            if (item.latitude && item.longitude) {
+                                var lat = parseFloat(item.latitude);
+                                var lng = parseFloat(item.longitude);
+                                var sn = Math.floor((lat - south) / range);
+                                var we = Math.floor((lng - west) / range);
+                                if (grid[sn + '.' + we]) {
+                                    grid[sn + '.' + we]++;
+                                } else {
+                                    grid[sn + '.' + we] = 1;
+                                }
+                                var d = {
+                                    lat: lat,
+                                    lng: lng,
+                                    count: 1,
+                                };
+                                if (dataset.track) {
+                                    Object.keys(track).every(function (id) {
+                                        if (id == item.owner) {
+                                            track[id].push(item);
+                                            return false;
+                                        } else {
+                                            return true;
+                                        }
+                                    });
+                                }
+                                src.data.push(d);
+                            }
+                        });
+                        var n = [];
+                        for (var idx in grid) {
+                            n.push(grid[idx]);
+                        }
+                        n = n.sort(function cp(val1, val2) {
+                            return val2 - val1;
+                        });
+                        console.log(track);
+                        if (dataset.track) {
+                            Object.keys(track).every(function (id) {
+                                var traj = track[id].sort(function (p1, p2) {
+                                    return p1.datetaken - p2.datetaken;
+                                });
+
+                                traj.every(function (item, n) {
+                                    var marker = new L.Marker(new L.LatLng(parseFloat(item.latitude), parseFloat(item.longitude)), {
+                                        icon: new L.NumberedDivIcon({ number: n + 1 }),
+                                    });
+                                    marker.on('click', function () {
+                                        console.log(item.datetaken + '\t' + item.url_z);
+                                    });
+                                    marker.addTo(map);
+                                    return true;
+                                });
+                                return true;
+                            });
+                        }
+                        src.max = Math.round(n[Math.round(n.length / 10)]);
+                        var cfg = {
+                            radius: range,
+                            maxOpacity: 0.8,
+                            scaleRadius: true,
+                            useLocalExtrema: false,
+                            latField: 'lat',
+                            lngField: 'lng',
+                            valueField: 'count',
+                        };
+                        console.log('[Draw heatmap] max=' + src.max + ' ,range=' + range);
+                        var heatmapLayer = new HeatmapOverlay(cfg);
+                        heatmapLayer.setData(src);
+                        map = new L.Map('map', {
+                            center: new L.LatLng(center.lat, center.lng),
+                            zoom: 4,
+                            layers: [baseLayer, heatmapLayer],
+                        });
+                        console.log('BBOX', bbox);
+                        map.fitBounds(bbox);
+                        map.on('zoomend', function () {
+                            //console.log("zoom");
+                            map.removeLayer(heatmapLayer);
+                            var east = Math.max(dataset.bbox[0], dataset.bbox[2]);
+                            var west = Math.min(dataset.bbox[0], dataset.bbox[2]);
+                            var north = Math.max(dataset.bbox[1], dataset.bbox[3]);
+                            var south = Math.min(dataset.bbox[1], dataset.bbox[3]);
+
+                            var rangeDataset = Math.min(north - south, east - west) / cells;
+                            var b = map.getBounds();
+                            var rangeMap = Math.min(b.getNorth() - b.getSouth(), b.getEast() - b.getWest()) / cells;
+                            var new_cfg = {
+                                radius: Math.min(rangeDataset, rangeMap),
+                                maxOpacity: 0.8,
+                                scaleRadius: true,
+                                useLocalExtrema: true,
+                                latField: 'lat',
+                                lngField: 'lng',
+                                valueField: 'count',
+                            };
+                            heatmapLayer = new HeatmapOverlay(new_cfg);
+                            map.addLayer(heatmapLayer);
+                            heatmapLayer.setData(src);
+                        });
+                        changePhoto();
+                    });
+            };
+            /*
+                document.getElementById('files').addEventListener('change', function (evt) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        map.removeLayer(layer);
+                        var src = {
+                            max: 45,
+                            data: [],
+                        };
+                        var dataset = JSON.parse(e.target.result);
                         var east = Math.max(dataset.bbox[0], dataset.bbox[2]);
                         var west = Math.min(dataset.bbox[0], dataset.bbox[2]);
                         var north = Math.max(dataset.bbox[1], dataset.bbox[3]);
@@ -234,11 +381,6 @@
                                         console.log(item.datetaken + '\t' + item.url_z);
                                     });
                                     marker.addTo(map);
-                                    /*
-                        L.marker([parseFloat(item.latitude), parseFloat(item.longitude)]).on("click", function () {
-                            console.log(item.datetaken + "\t" + item.url_z);
-                        }).addTo(map);
-                        */
                                     return true;
                                 });
                                 return true;
@@ -255,131 +397,17 @@
                             valueField: 'count',
                         };
                         console.log('[Draw heatmap] max=' + src.max + ' ,range=' + range);
-
-                        var heatmapLayer = new HeatmapOverlay(cfg);
-                        heatmapLayer.setData(src);
-                        map = new L.Map('map', {
-                            center: new L.LatLng(35.4433, 139.64),
-                            zoom: 4,
-                            layers: [baseLayer, heatmapLayer],
-                        });
-                        map.fitBounds(bbox);
-                    });
-                /*
-        heatmapLayer.setData({
-            max:10,
-            data:[]
-        });
-        */
-                // make accessible for debugging
-                //layer = heatmapLayer;
-            };
-            document.getElementById('files').addEventListener('change', function (evt) {
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                    map.removeLayer(layer);
-                    var src = {
-                        max: 45,
-                        data: [],
+                        layer = new HeatmapOverlay(cfg);
+                        map.addLayer(layer);
+                        layer.setData(src);
+                        map.fitBounds([
+                            [dataset.bbox[1], dataset.bbox[0]],
+                            [dataset.bbox[3], dataset.bbox[2]],
+                        ]);
                     };
-                    var dataset = JSON.parse(e.target.result);
-                    var east = Math.max(dataset.bbox[0], dataset.bbox[2]);
-                    var west = Math.min(dataset.bbox[0], dataset.bbox[2]);
-                    var north = Math.max(dataset.bbox[1], dataset.bbox[3]);
-                    var south = Math.min(dataset.bbox[1], dataset.bbox[3]);
-                    var cells = 50;
-                    var grid = {};
-                    var track = {};
-                    if (dataset.track) {
-                        dataset.track.every(function (item) {
-                            track[item] = [];
-                            return true;
-                        });
-                    }
-                    document.getElementById('tag').innerHTML = 'Search: ' + dataset.search;
-                    var range = Math.min(north - south, east - west) / cells;
-                    dataset.data.forEach(function (item) {
-                        if (item.latitude && item.longitude) {
-                            var lat = parseFloat(item.latitude);
-                            var lng = parseFloat(item.longitude);
-                            var sn = Math.floor((lat - south) / range);
-                            var we = Math.floor((lng - west) / range);
-                            if (grid[sn + '.' + we]) {
-                                grid[sn + '.' + we]++;
-                            } else {
-                                grid[sn + '.' + we] = 1;
-                            }
-                            var d = {
-                                lat: lat,
-                                lng: lng,
-                                count: 1,
-                            };
-                            if (dataset.track) {
-                                Object.keys(track).every(function (id) {
-                                    if (id == item.owner) {
-                                        track[id].push(item);
-                                        return false;
-                                    } else {
-                                        return true;
-                                    }
-                                });
-                            }
-                            src.data.push(d);
-                        }
-                    });
-                    var n = [];
-                    for (var idx in grid) {
-                        n.push(grid[idx]);
-                    }
-                    n = n.sort(function cp(val1, val2) {
-                        return val2 - val1;
-                    });
-                    console.log(track);
-                    if (dataset.track) {
-                        Object.keys(track).every(function (id) {
-                            var traj = track[id].sort(function (p1, p2) {
-                                return p1.datetaken - p2.datetaken;
-                            });
-
-                            traj.every(function (item, n) {
-                                var marker = new L.Marker(new L.LatLng(parseFloat(item.latitude), parseFloat(item.longitude)), {
-                                    icon: new L.NumberedDivIcon({ number: n + 1 }),
-                                });
-                                marker.on('click', function () {
-                                    console.log(item.datetaken + '\t' + item.url_z);
-                                });
-                                marker.addTo(map);
-                                /*
-                        L.marker([parseFloat(item.latitude), parseFloat(item.longitude)]).on("click", function () {
-                            console.log(item.datetaken + "\t" + item.url_z);
-                        }).addTo(map);
-                        */
-                                return true;
-                            });
-                            return true;
-                        });
-                    }
-                    src.max = Math.round(n[Math.round(n.length / 10)]);
-                    var cfg = {
-                        radius: range,
-                        maxOpacity: 0.8,
-                        scaleRadius: true,
-                        useLocalExtrema: false,
-                        latField: 'lat',
-                        lngField: 'lng',
-                        valueField: 'count',
-                    };
-                    console.log('[Draw heatmap] max=' + src.max + ' ,range=' + range);
-                    layer = new HeatmapOverlay(cfg);
-                    map.addLayer(layer);
-                    layer.setData(src);
-                    map.fitBounds([
-                        [dataset.bbox[1], dataset.bbox[0]],
-                        [dataset.bbox[3], dataset.bbox[2]],
-                    ]);
-                };
-                reader.readAsText(evt.target.files[0]);
-            });
+                    reader.readAsText(evt.target.files[0]);
+                });
+            */
         </script>
     </body>
 </html>

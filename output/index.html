@@ -60,9 +60,9 @@
             padding: 10px;
             font-weight: 200;
             z-index: 10000;
-            left: 100%;
+            left: 50%;
             width: 300px;
-            margin-left: -300px;
+            margin-left: -150px;
         }
 
         /*Thanks https://gist.github.com/comp615/2288108*/
@@ -170,11 +170,13 @@
         var layer;
         var cells = 50;
         var dataset = null;
+        var heatmapLayer = null;
         const onload = async () => {
             if (!initialRunning) {
-                map.eachLayer(function (layer) {
+                map.removeLayer(heatmapLayer);
+                /* map.eachLayer(function (layer) {
                     map.removeLayer(layer);
-                });
+                });*/
             } else {
                 const response = await fetch('/json');
                 dataset = await response.json();
@@ -187,10 +189,29 @@
                 [bboxraw[3], bboxraw[2]],
             ];
             console.log(search, bbox);
-            var baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
-                maxZoom: 18,
-            });
+            var baseLayers = {
+                "グレースケールマップ": L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.{ext}', {
+                    minZoom: 0,
+                    maxZoom: 20,
+                    attribution: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://www.stamen.com/" target="_blank">Stamen Design</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    ext: 'png'
+                }),
+                "グレースケールマップ(道無し)": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+                    maxZoom: 16
+                }),
+                "地形図": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 17,
+                    attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+                }),
+                "衛星画像": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                }),
+                "OpenStreetMap標準": L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                })
+            };
             var src = {
                 max: 45,
                 data: [],
@@ -284,16 +305,17 @@
                 valueField: 'count',
             };
             console.log('[Draw heatmap] max=' + src.max + ' ,range=' + range);
-            var heatmapLayer = new HeatmapOverlay(cfg);
+            heatmapLayer = new HeatmapOverlay(cfg);
             heatmapLayer.setData(src);
             if (initialRunning) {
                 console.log("map == null")
                 map = new L.Map('map', {
                     center: new L.LatLng(center.lat, center.lng),
                     zoom: 4,
-                    layers: [baseLayer, heatmapLayer],
+                    layers: [baseLayers["グレースケールマップ"], heatmapLayer],
                 });
                 map.fitBounds(bbox);
+                L.control.layers(baseLayers).addTo(map);
                 map.on('zoomend', function () {
                     console.log("zoom");
                     map.removeLayer(heatmapLayer);
@@ -319,7 +341,7 @@
                     heatmapLayer.setData(src);
                 });
             } else {
-                map.addLayer(baseLayer);
+                //map.addLayer(baseLayers);
                 map.addLayer(heatmapLayer);
             }
             console.log('BBOX', bbox);

@@ -6,6 +6,8 @@ const async = require('async');
 const fs = require('fs');
 const path = require('path');
 function BBOX2Heatmap(apikey, bbox, option) {
+    console.log("[Start Crawling]");
+    console.log(bbox);
     console.log(option);
     var maxUploadDate = Math.floor(Date.now() / 1000);
     /*
@@ -93,13 +95,12 @@ function BBOX2Heatmap(apikey, bbox, option) {
         */
     }
     function doCrawl(fd, flickr, next) {
-        console.log('Ready!');
+        console.log('写真をFlickrから取得します。全て集め終えるか、' + max + '件取得で自動終了する他、[Ctrl+C]で途中終了も可能です。終了後はヒートマップを表示する事ができます。');
         var ids = {};
         var nop = 0;
         var page = 1;
-        process.on('SIGINT', function () {
-            next(new Error('SIGINT'), fd, flickr);
-        });
+        const handlerSIGINT = ()=>{next(new Error('SIGINT'), fd, flickr);};
+        process.on('SIGINT',handlerSIGINT);
         async.forever(
             function (nextF) {
                 var maxUploadDate_start = maxUploadDate;
@@ -111,8 +112,17 @@ function BBOX2Heatmap(apikey, bbox, option) {
                     max_upload_date: maxUploadDate,
                     extras: 'date_upload,date_taken,url_sq,url_z,geo',
                 };
-                if (search) {
-                    opt.text = search;
+                if (option.searchmode == "fulltext") {
+                    if (search) {
+                        opt.text = search;
+                    }
+                } else {
+                    if (search) {
+                        opt.tags = search;
+                    }
+                    if (option.searchmode == "and") {
+                        opt.tag_mode = "all"
+                    }
                 }
                 flickr.photos
                     .search(opt)
@@ -195,6 +205,11 @@ function BBOX2Heatmap(apikey, bbox, option) {
         );
     }
     function errorHandler(err, fd) {
+        process.removeAllListeners('SIGINT');
+        process.on('SIGINT', function () {
+            console.log("プログラムを終了します。");
+            process.exit(0);
+        });
         console.log('[Stop by user ' + err.message + ']\n\tResult is stored into ' + output);
         doneCrawl = true;
         var fs = require('fs');
@@ -242,13 +257,13 @@ function BBOX2Heatmap(apikey, bbox, option) {
                     }
                 });
                 server.listen(port);
-                opener('http://localhost:' + port + '/?bbox=' + bbox[0] + ',' + bbox[1] + ',' + bbox[2] + ',' + bbox[3] + '&search=' + option.search);
+                const URL = 'http://localhost:' + port + '/?bbox=' + bbox[0] + ',' + bbox[1] + ',' + bbox[2] + ',' + bbox[3] + '&search=' + option.search;
+                opener(URL);
                 console.log('\tServer running at http://localhost:' + port + '/');
-                //console.log('プログラムを停止するには[Ctrl+C]をおしてください。');
+                console.log('ブラウザが自動で開かない場合は以下のURLに接続してください。');
+                console.log("\t" + URL);
+                console.log('プログラムを停止するには[Ctrl+C]もしくは[Command+.]を押してください。');
             }
-            setTimeout(() => {
-                process.exit(0);
-            }, 5000);
         });
     }
 }

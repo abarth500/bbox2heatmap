@@ -46,7 +46,7 @@ var option = {};
 if (argv.argv._.length > 0 && !argv.argv._[0].startsWith('-')) {
     option.output = argv.argv._[0];
 } else {
-    option.output = shortid.generate();
+    option.output = "_" + shortid.generate();
 }
 
 if (argv.argv.max) {

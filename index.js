@@ -1,7 +1,10 @@
 /**
  * Created by Shohei Yokoyama on 2015/10/15.
  */
-const format = require('string-template');
+//const format = require('string-template');
+const { TemplateEngine } = require('thymeleaf');
+const templateEngine = new TemplateEngine();
+
 const async = require('async');
 const fs = require('fs');
 const path = require('path');
@@ -99,8 +102,8 @@ function BBOX2Heatmap(apikey, bbox, option) {
         var ids = {};
         var nop = 0;
         var page = 1;
-        const handlerSIGINT = ()=>{next(new Error('SIGINT'), fd, flickr);};
-        process.on('SIGINT',handlerSIGINT);
+        const handlerSIGINT = () => { next(new Error('SIGINT'), fd, flickr); };
+        process.on('SIGINT', handlerSIGINT);
         async.forever(
             function (nextF) {
                 var maxUploadDate_start = maxUploadDate;
@@ -218,25 +221,21 @@ function BBOX2Heatmap(apikey, bbox, option) {
             //console.error(err);
             if (local) {
                 //HTMLファイル(テンプレート)読み込み
-                const template_path = __dirname + path.sep + 'output' + path.sep + 'portable.html';
+                const template_path = __dirname + path.sep + 'output' + path.sep + 'index.html';
                 let template = fs.readFileSync(template_path);
                 //console.log(template.toString());
                 //JSONファイル読み込み
                 let json = fs.readFileSync(output);
-                //console.log(json.toString());
-                //JSONファイル→HTMLファイル差し込み
-                //HTMLファイル保存
-                fs.writeFileSync(
-                    html,
-                    format(template.toString(), {
-                        bbox2heatmap0result: json.toString(),
-                        bbox2heatmap0bbox: '[' + bbox[0] + ',' + bbox[1] + ',' + bbox[2] + ',' + bbox[3] + ']',
-                        bbox2heatmap0search: "'" + option.search + "'",
-                    })
-                );
+
+                const pattern1 = /\/\*bbox2heatmap0result\*\//; template = template.toString().replace(pattern1, json.toString() + "; //");
+                const pattern2 = /\/\*bbox2heatmap0bbox\*\//; template = template.replace(pattern2, '[' + bbox[0] + ',' + bbox[1] + ',' + bbox[2] + ',' + bbox[3] + ']; //');
+                const pattern3 = /\/\*bbox2heatmap0search\*\//; template = template.replace(pattern3, "'" + option.search + "'; //");
                 //JSONファイル消去
+                fs.writeFileSync(html, template);
                 fs.rmSync(output);
                 console.log('\tOpen ' + html + ' to see the results');
+
+
             } else {
                 const port = 54328;
                 const opener = require('opener');

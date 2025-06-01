@@ -118,6 +118,13 @@
     <div id="thumb"><img /></div>
     <div id="map"></div>
     <script>
+        let dataset =  /*bbox2heatmap0result*/ null;
+
+        let search =  /*bbox2heatmap0search*/ null;
+
+        let bboxraw =  /*bbox2heatmap0bbox*/ null;
+    </script>
+    <script>
         // Thanks https://gist.github.com/comp615/2288108
         let photos = [];
         let photoIdx = 0;
@@ -169,7 +176,6 @@
 
         var layer;
         var cells = 50;
-        var dataset = null;
         var heatmapLayer = null;
         const onload = async () => {
             if (!initialRunning) {
@@ -178,17 +184,25 @@
                     map.removeLayer(layer);
                 });*/
             } else {
-                const response = await fetch('/json');
-                dataset = await response.json();
+                if (dataset == null) {
+                    const response = await fetch('/json');
+                    dataset = await response.json();
+                }
+                console.log("[DATA]", dataset);
             }
             const params = new URLSearchParams(location.search);
-            const search = params.get('search');
-            const bboxraw = params.get('bbox').split(',');
+            if (search == null) {
+                search = params.get('search');
+            }
+            if (bboxraw == null) {
+                bboxraw = params.get('bbox').split(',');
+            }
             const bbox = [
                 [bboxraw[1], bboxraw[0]],
                 [bboxraw[3], bboxraw[2]],
             ];
-            console.log(search, bbox);
+            console.log("[ARGV]", search, bbox);
+
             var baseLayers = {
                 "グレースケールマップ": L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.{ext}', {
                     minZoom: 0,
@@ -233,7 +247,10 @@
             document.getElementById('tag').innerHTML = 'Search: ' + dataset.search + " (Headmap Range: " + cells + ")";
             var range = Math.min(north - south, east - west) / cells;
             dataset.data.forEach(function (item) {
-                console.log(item);
+                if(!item.hasOwnProperty("url_sq")){
+                    return true;
+                }
+                console.log(item.url_sq);
                 photos.push({
                     url: item.url_sq,
                     lat: item.latitude,
@@ -309,6 +326,7 @@
             heatmapLayer.setData(src);
             if (initialRunning) {
                 console.log("map == null")
+                initialRunning = false;
                 map = new L.Map('map', {
                     center: new L.LatLng(center.lat, center.lng),
                     zoom: 4,
@@ -348,7 +366,6 @@
             if (!changePhotoRunning) {
                 changePhoto();
             }
-            initialRunning = false;
         };
         document.querySelector("#rangeSlider").addEventListener("change", (e) => {
             cells = e.target.value;

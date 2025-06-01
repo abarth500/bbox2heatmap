@@ -1,7 +1,10 @@
 /**
  * Created by Shohei Yokoyama on 2015/10/15.
  */
-
+const format = require('string-template');
+const async = require('async');
+const fs = require('fs');
+const path = require('path');
 function BBOX2Heatmap(apikey, bbox, option) {
     console.log(option);
     var maxUploadDate = Math.floor(Date.now() / 1000);
@@ -14,9 +17,11 @@ function BBOX2Heatmap(apikey, bbox, option) {
     var doneCrawl = false;
     var search = false;
     var track = false;
+    var local = false;
     var max = 1000000;
     var shortid = require('shortid');
-    var output = __dirname + '/output/' + shortid.generate() + '.json';
+    var output = __dirname + path.sep + 'output' + path.sep + shortid.generate() + '.json';
+    var html = '';
     if (option) {
         if (option.hasOwnProperty('track')) {
             track = option.track.split(',');
@@ -28,7 +33,14 @@ function BBOX2Heatmap(apikey, bbox, option) {
             max = option.max;
         }
         if (option.hasOwnProperty('output')) {
-            output = __dirname + '/output/' + option.output + '.json';
+            if (option.hasOwnProperty('directory')) {
+                local = true;
+                fs.mkdirSync(option.directory);
+                output = option.directory + 'result.json';
+                html = option.directory + 'index.html';
+            } else {
+                output = __dirname + 'output' + option.output + '.json';
+            }
         }
     }
     /*
@@ -48,11 +60,10 @@ function BBOX2Heatmap(apikey, bbox, option) {
     }
     */
     //var flickr_options  = opt['flickr_options'];
-    var async = require('async');
+    console.log('Output:', output);
     async.waterfall([openOutputFile, openFlickrConnection, doCrawl], errorHandler);
 
     function openOutputFile(next) {
-        var fs = require('fs');
         var line = '{"bbox":[' + bbox.join(',') + '],';
         fs.open(output, 'w', '0666', function (err, fd) {
             if (search) {
@@ -138,7 +149,7 @@ function BBOX2Heatmap(apikey, bbox, option) {
                                             console.log('[' + maxUploadDate + ' (' + page + '/' + result.photos.pages + ')] ' + nop + ' photographs');
                                             //errorHandler(null, fd);
                                             doneCrawl = true;
-                                            throw new Error("Done");
+                                            throw new Error('Done');
                                             //nextF('Collect ' + max + ' photos', fd, flickr);
                                             //return 'Collect ' + max + ' photos';
                                             //process.exit(0);
@@ -147,13 +158,13 @@ function BBOX2Heatmap(apikey, bbox, option) {
                                     //maxUploadDate--;
                                     if (result.photos.pages == 1) {
                                         doneCrawl = true;
-                                        throw new Error("Done");
+                                        throw new Error('Done');
                                         //nextF('Collect all photos', fd, flickr);
                                         //return 'collect all photos';
                                         //process.exit(0);
                                     }
                                     if (doneCrawl) {
-                                        throw new Error("Done");
+                                        throw new Error('Done');
                                     } else {
                                         if (maxUploadDate_start == maxUploadDate) {
                                             page++;
@@ -190,28 +201,51 @@ function BBOX2Heatmap(apikey, bbox, option) {
         fs.write(fd, '{}]}', function () {
             fs.close(fd);
             //console.error(err);
-            const port = 54328;
-            const opener = require('opener');
-            const http = require('http');
-            const server = http.createServer((request, response) => {
-                if (request.url == '/json') {
-                    response.writeHead(200, {
-                        'Content-Type': 'application/json; charset=utf-8',
-                    });
-                    var raw = fs.createReadStream(output);
-                    raw.pipe(response);
-                } else {
-                    response.writeHead(200, {
-                        'Content-Type': 'text/html',
-                    });
-                    var raw = fs.createReadStream(__dirname + '/output/index.html');
-                    raw.pipe(response);
-                }
-            });
-            server.listen(port);
-            opener('http://localhost:' + port + '/?bbox=' + bbox[0] + ',' + bbox[1] + ',' + bbox[2] + ',' + bbox[3] + '&search=' + option.search);
-            console.log('\tServer running at http://localhost:' + port + '/');
-            //console.log('プログラムを停止するには[Ctrl+C]をおしてください。');
+            if (local) {
+                //HTMLファイル(テンプレート)読み込み
+                const template_path = __dirname + path.sep + 'output' + path.sep + 'portable.html';
+                let template = fs.readFileSync(template_path);
+                //console.log(template.toString());
+                //JSONファイル読み込み
+                let json = fs.readFileSync(output);
+                //console.log(json.toString());
+                //JSONファイル→HTMLファイル差し込み
+                //HTMLファイル保存
+                fs.writeFileSync(
+                    html,
+                    format(template.toString(), {
+                        bbox2heatmap0result: json.toString(),
+                        bbox2heatmap0bbox: '[' + bbox[0] + ',' + bbox[1] + ',' + bbox[2] + ',' + bbox[3] + ']',
+                        bbox2heatmap0search: "'" + option.search + "'",
+                    })
+                );
+                //JSONファイル消去
+                fs.rmSync(output);
+                console.log('\tOpen ' + html + ' to see the results');
+            } else {
+                const port = 54328;
+                const opener = require('opener');
+                const http = require('http');
+                const server = http.createServer((request, response) => {
+                    if (request.url == '/json') {
+                        response.writeHead(200, {
+                            'Content-Type': 'application/json; charset=utf-8',
+                        });
+                        var raw = fs.createReadStream(output);
+                        raw.pipe(response);
+                    } else {
+                        response.writeHead(200, {
+                            'Content-Type': 'text/html',
+                        });
+                        var raw = fs.createReadStream(__dirname + '/output/index.html');
+                        raw.pipe(response);
+                    }
+                });
+                server.listen(port);
+                opener('http://localhost:' + port + '/?bbox=' + bbox[0] + ',' + bbox[1] + ',' + bbox[2] + ',' + bbox[3] + '&search=' + option.search);
+                console.log('\tServer running at http://localhost:' + port + '/');
+                //console.log('プログラムを停止するには[Ctrl+C]をおしてください。');
+            }
             setTimeout(() => {
                 process.exit(0);
             }, 5000);

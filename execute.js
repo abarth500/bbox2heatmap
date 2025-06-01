@@ -7,6 +7,7 @@
 const shortid = require('shortid');
 const crypto = require('crypto');
 const prompts = require('prompts');
+const path = require('path');
 var BBOX2Heatmap = require(__dirname + '/index.js');
 var argv = require('yargs')
     .usage('Usage: node $0 [output-file-name] [options]')
@@ -26,9 +27,12 @@ var argv = require('yargs')
     .alias('K', 'apikey')
     .describe('K', 'Your API KEY for flickr API')
     .string('K')
+    .alias('P', 'portable')
+    .describe('P', 'ignore on-demand visualization and save result as a static JSON file')
+    .string('P')
     .help('h')
     .alias('h', 'help')
-    .epilog('copyright 2022').argv;
+    .epilog('copyright 2022-2025').argv;
 /*
 if (!argv.bbox) {
     console.error('Set BBOX. (see --help)');
@@ -38,7 +42,7 @@ if (!argv.bbox) {
 //var bbox = argv.bbox.split(',');
 //if (bbox.length == 4 && !isNaN(bbox[0]) && !isNaN(bbox[1]) && !isNaN(bbox[2]) && !isNaN(bbox[3])) {
 var option = {};
-if (argv._.length > 0) {
+if (argv._.length > 0 && !argv._[0].startsWith('-')) {
     option.output = argv._[0];
 } else {
     option.output = shortid.generate();
@@ -55,6 +59,10 @@ if (argv.max) {
 }
 if (argv.track) {
     option.track = argv.track;
+}
+if (argv.hasOwnProperty('portable')) {
+    option.directory = process.cwd() + path.sep + option.output + path.sep;
+    console.log('Outpur Dir:', option.directory);
 }
 
 (async function () {
@@ -85,9 +93,9 @@ if (argv.track) {
             if (argv.bbox) {
                 return argv.bbox.split(',');
             } else {
-                console.log("");
-                console.log("BBOX作成サイト：","https://boundingbox.klokantech.com/");
-                console.log("上記サイトの使い方：","https://github.com/abarth500/bbox2heatmap/blob/HEAD/bbox.png");
+                console.log('');
+                console.log('BBOX作成サイト：', 'https://boundingbox.klokantech.com/');
+                console.log('上記サイトの使い方：', 'https://github.com/abarth500/bbox2heatmap/blob/HEAD/bbox.png');
                 let questions = {
                     type: 'text', // インプットタイプ
                     name: 'myBBOX', // 変数名
